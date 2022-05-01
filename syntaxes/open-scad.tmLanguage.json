@@ -1,0 +1,57 @@
+{
+  "name": "open-scad",
+  "scopeName": "source.open-scad",
+  "fileTypes": [
+    ".scad"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.open-scad",
+      "match": "\\b(false|true|undef)\\b"
+    },
+    {
+      "name": "string.quoted.double.open-scad",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "string.quoted.single.open-scad",
+      "begin": "'",
+      "end": "'"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.open-scad",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.open-scad"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.open-scad"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.open-scad"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.open-scad"
+        }
+      ]
+    }
+  }
+}
