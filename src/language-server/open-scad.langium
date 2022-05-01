@@ -1,7 +1,7 @@
 grammar OpenScad
 
-entry Input: statements+=Statement*; // ok
-Statement: //ok
+entry Input: statements+=Statement*; 
+Statement: 
     ';'
     |'{' Statement* '}'
     | ModuleInstantiation
@@ -10,67 +10,91 @@ Statement: //ok
     | FunctionDefinition
     ;
 
-ModuleDefinition: MODULE name=ID '(' params= Parameters ')'  body=Statement; //ok
-FunctionDefinition: FUNCTION name=ID '(' params=Parameters ')' '=' expr=Expr ';' ; //ok
+ModuleDefinition: MODULE name=ID '(' params= Parameters ')'  body=Statement; 
+FunctionDefinition: FUNCTION name=ID '(' params=Parameters ')' '=' expr=Expr ';' ; 
 
-Assignment: name=ID '=' Expr ';' ; // ok
+Assignment: name=ID '=' exp=Expr ';' ; 
 
-ModuleInstantiation: ('!'|'#'|'%'|'*')* module=SingleModuleInstantiation child=ChildStatement | ifElse=IfelseStatement; //ok
-IfelseStatement: ifStmt=IfStatement (ELSE elseBranch=ChildStatement)?; // ok
-IfStatement: IF '(' condition=Expr ')' body=ChildStatement; //ok
+ModuleInstantiation: ('!'|'#'|'%'|'*')* module=SingleModuleInstantiation child=ChildStatement | ifElse=IfelseStatement; 
+IfelseStatement: ifStmt=IfStatement (ELSE elseBranch=ChildStatement)?; 
+IfStatement: IF '(' condition=Expr ')' body=ChildStatement; 
 
-ChildStatements:  (stmts+=ChildStatement | assignements+=Assignment)*;  //ok
+ChildStatements:  (stmts+=ChildStatement | assignements+=Assignment)*;  
 
-ChildStatement: ';' | '{' block=ChildStatements  '}' | module=ModuleInstantiation; //ok
+ChildStatement: ';' | '{' block=ChildStatements  '}' | module=ModuleInstantiation; 
 
-ModuleId: id=ID|FOR|LET|ASSERT|ECHO|EACH; //ok
+ModuleId: id=ID|FOR|LET|ASSERT|ECHO|EACH; 
 
 SingleModuleInstantiation: id=ModuleId '(' args=Arguments ')' ;
 
-Expr: exp=ExprV<false>;
-
-ExprV<vector>: 
-    or=LogicOr<vector> ('?' trueExpr=Expr ':' falseExpr=Expr)?
+Expr: 
+    or=LogicOr ('?' trueExpr=Expr ':' falseExpr=Expr)?
     | FUNCTION '(' parameters=Parameters ')' expr=Expr
-    | <!vector> LET '(' args=Arguments ')' expr=Expr
-    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; // ok
+    | LET '(' args=Arguments ')' expr=Expr
+    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; 
 
-LogicOr<vector>: expr+=LogicAnd<vector> ('|' expr+=LogicAnd<vector> )*; //ok
-LogicAnd<vector>: expr+= Equality<vector> ('&' expr+=Equality<vector>)*; //ok
-Equality<vector>: expr+=Comparison<vector> (('='|'!=') expr+=Comparison<vector>)*; //ok
-Comparison<vector>: expr+=Addition<vector> (('>'|'>='|'<'|'<=') expr+=Addition<vector>)*; //ok
-Addition<vector>: expr+=Multiplication<vector> (('+'|'-') expr+=Multiplication<vector>)*;//ok
-Multiplication<vector>: expr+=Unary<vector> (('*'|'/'|'%') expr+=Unary<vector>)*;//ok
-Unary<vector>: ('+'|'-'|'!')* expr=Exponent<vector>; //ok
-Exponent<vector>: call=Call<vector> ('^' unary=Unary<vector>)?; // ok
-Call<vector>: part+=Primary<vector> (
-    '(' args+=Arguments ')'
+ExprNL: 
+    or=LogicOrNL ('?' trueExpr=Expr ':' falseExpr=Expr)?
+    | FUNCTION '(' parameters=Parameters ')' expr=Expr
+    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; 
+
+LogicOr: expr+=LogicAnd ('||' expr+=LogicAnd )*; 
+LogicOrNL: expr+=LogicAndNL ('||' expr+=LogicAnd )*; 
+LogicAnd: expr+= Equality ('&&' expr+=Equality)*; 
+LogicAndNL: expr+= EqualityNL ('&&' expr+=Equality)*; 
+Equality: expr+=Comparison (('='|'!=') expr+=Comparison)*; 
+EqualityNL: expr+=ComparisonNL (('='|'!=') expr+=Comparison)*; 
+Comparison: expr+=Addition (('>'|'>='|'<'|'<=') expr+=Addition)*;  
+ComparisonNL: expr+=AdditionNL (('>'|'>='|'<'|'<=') expr+=Addition)*;  
+Addition: expr+=Multiplication (('+'|'-') expr+=Multiplication)*;
+AdditionNL: expr+=MultiplicationNL (('+'|'-') expr+=Multiplication)*;
+Multiplication: expr+=Unary (('*'|'/'|'%') expr+=Unary)*;
+MultiplicationNL: expr+=UnaryNL (('*'|'/'|'%') expr+=Unary)*;
+Unary: ('+'|'-'|'!')* expr=Exponent; 
+UnaryNL: ('+'|'-'|'!')* expr=ExponentNL; 
+Exponent: call=Call ('^' unary=Unary)?; 
+ExponentNL: call=CallNL ('^' unary=Unary)?; 
+Call: part+=Primary (
+    '(' args+=Arguments ')' 
     | '[' expr+=Expr ']'
-    | '.' id+=ID)*; //ok
+    | '.' id+=ID
+)*; 
+CallNL: part+=PrimaryNL (
+    '(' args+=Arguments ')' 
+    | '[' expr+=Expr ']'
+    | '.' id+=ID
+)*; 
 
-Primary<vector>:
+Primary:
 'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
-| '(' expr+=ExprV<vector> ')'
+| '(' expr+=Expr ')'
 | '[' (
-     expr+=ExprV<true> ':' expr+=Expr (':' expr+=Expr)? // range 
+     expr+=ExprNL ':' expr+=Expr (':' expr+=Expr)? // range 
      | v+=ListComprehensionElementP (',' v+=ListComprehensionElementP)* ','?
-)? ']' ; // ok 
+)? ']' ; 
 
+PrimaryNL:
+'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
+| '(' expr+=ExprNL ')'
+| '[' (
+     expr+=ExprNL ':' expr+=Expr (':' expr+=Expr)? // range 
+     | v+=ListComprehensionElementP (',' v+=ListComprehensionElementP)* ','?
+)? ']' ; 
 
-ListComprehensionElementP: e=ListComprehensionElement | '(' e=ListComprehensionElement ')'; // ok
+ListComprehensionElementP: e=ListComprehensionElement | '(' e=ListComprehensionElement ')'; 
 ListComprehensionElement:
-    LET '(' args=Arguments ')' children=ListComprehensionElementP
-    | EACH v+=ListComprehensionElementOrExpr
+    LET '(' args=Arguments ')' children=ListComprehensionElementP |
+    EACH v+=ListComprehensionElementOrExpr
     | FOR '(' args=Arguments (';' expr=Expr ';' args2=Arguments)? ')' v+=ListComprehensionElementOrExpr
-    | IF '(' expr=Expr ')' v+=ListComprehensionElementOrExpr ( ELSE v+= ListComprehensionElementOrExpr) ; // ok
+    | IF '(' expr=Expr ')' v+=ListComprehensionElementOrExpr ( ELSE v+= ListComprehensionElementOrExpr) ; 
 
-ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=ExprV<true>; // ok
+ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=ExprNL;
 
-Parameters: (params+=Parameter (',' params+=Parameter)* ','?)?; //ok
-Parameter: name=ID ('=' defaultExpr=Expr)?; // ok
+Parameters: (params+=Parameter (',' params+=Parameter)* ','?)?; 
+Parameter: name=ID ('=' defaultExpr=Expr)?; 
 
-Arguments: (args+=Argument (',' args+=Argument)* ','?)?; //ok
-Argument: (paramName=ID '=' )? expr=Expr; //ok
+Arguments: (args+=Argument (',' args+=Argument)* ','?)?; 
+Argument: (paramName=ID '=' )? expr=Expr; 
 
 hidden terminal WS: /\s+/;
 
@@ -84,8 +108,8 @@ terminal MODULE: /module/;
 terminal IF: /if/;
 terminal ELSE: /else/;
 
-terminal ID: /[_a-zA-Z][\w_]*/;
 terminal NUMBER returns number: /[0-9]+/;
+terminal ID: /\$?[a-zA-Z0-9_]+/;
 terminal STRING: /"[^"]*"|'[^']*'/;
 
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
