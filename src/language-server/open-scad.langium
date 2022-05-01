@@ -27,45 +27,44 @@ ModuleId: id=ID|FOR|LET|ASSERT|ECHO|EACH; //ok
 
 SingleModuleInstantiation: id=ModuleId '(' args=Arguments ')' ;
 
-Expr: //ok
-    or=LogicOr ('?' trueExpr=Expr ':' falseExpr=Expr)?
-    | FUNCTION '(' parameters=Parameters ')' expr=Expr
-    | LET '(' args=Arguments ')' expr=Expr
-    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ;
+Expr: exp=ExprV<false>;
 
-LogicOr: expr+=LogicAnd ('|' expr+=LogicAnd )*; //ok
-LogicAnd: expr+= Equality ('&' expr+=Equality)*; //ok
-Equality: expr+=Comparison (('='|'!=') expr+=Comparison)*; //ok
-Comparison: expr+=Addition (('>'|'>='|'<'|'<=') expr+=Addition)*; //ok
-Addition: expr+=Multiplication (('+'|'-') expr+=Multiplication)*;//ok
-Multiplication: expr+=Unary (('*'|'/'|'%') expr+=Unary)*;//ok
-Unary: ('+'|'-'|'!')* expr=Exponent; //ok
-Exponent: call=Call ('^' unary=Unary)?; // ok
-Call: part+=Primary (
+ExprV<vector>: 
+    or=LogicOr<vector> ('?' trueExpr=Expr ':' falseExpr=Expr)?
+    | FUNCTION '(' parameters=Parameters ')' expr=Expr
+    | <!vector> LET '(' args=Arguments ')' expr=Expr
+    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; // ok
+
+LogicOr<vector>: expr+=LogicAnd<vector> ('|' expr+=LogicAnd<vector> )*; //ok
+LogicAnd<vector>: expr+= Equality<vector> ('&' expr+=Equality<vector>)*; //ok
+Equality<vector>: expr+=Comparison<vector> (('='|'!=') expr+=Comparison<vector>)*; //ok
+Comparison<vector>: expr+=Addition<vector> (('>'|'>='|'<'|'<=') expr+=Addition<vector>)*; //ok
+Addition<vector>: expr+=Multiplication<vector> (('+'|'-') expr+=Multiplication<vector>)*;//ok
+Multiplication<vector>: expr+=Unary<vector> (('*'|'/'|'%') expr+=Unary<vector>)*;//ok
+Unary<vector>: ('+'|'-'|'!')* expr=Exponent<vector>; //ok
+Exponent<vector>: call=Call<vector> ('^' unary=Unary<vector>)?; // ok
+Call<vector>: part+=Primary<vector> (
     '(' args+=Arguments ')'
     | '[' expr+=Expr ']'
     | '.' id+=ID)*; //ok
-Primary:
+
+Primary<vector>:
 'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
-| '(' expr=Expr ')'
-| '[' (expr+=Expr ':' expr+=Expr (':' expr+=Expr)?)? ']'
-| '[' v=VectorElements ','? ']' ; // ok 
+| '(' expr+=ExprV<vector> ')'
+| '[' (
+     expr+=ExprV<true> ':' expr+=Expr (':' expr+=Expr)? // range 
+     | v+=ListComprehensionElementP (',' v+=ListComprehensionElementP)* ','?
+)? ']' ; // ok 
 
-ListComprehensionElements:
-    LET '(' args=Arguments ')' children=ListComprehensionElementsP
-    | EACH v+=VectorElement
-    | FOR '(' args=Arguments (';' expr=Expr ';' args2=Arguments)? ')' v+=VectorElement
-    | IF '(' expr=Expr ')' v+=VectorElement ( ELSE v+= VectorElement) ; // ok
 
-ListComprehensionElementsP: e=ListComprehensionElements | '(' e=ListComprehensionElements ')'; // ok
-VectorElements: v+=VectorElement (',' v+=VectorElement)*; // ok
-VectorElement: elements=ListComprehensionElementsP | expr=Expr; // ok
+ListComprehensionElementP: e=ListComprehensionElement | '(' e=ListComprehensionElement ')'; // ok
+ListComprehensionElement:
+    LET '(' args=Arguments ')' children=ListComprehensionElementP
+    | EACH v+=ListComprehensionElementOrExpr
+    | FOR '(' args=Arguments (';' expr=Expr ';' args2=Arguments)? ')' v+=ListComprehensionElementOrExpr
+    | IF '(' expr=Expr ')' v+=ListComprehensionElementOrExpr ( ELSE v+= ListComprehensionElementOrExpr) ; // ok
 
-// --------
-//SquareBracketExpression: '[' (Ex)
-
-// ---------
-
+ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=ExprV<true>; // ok
 
 Parameters: (params+=Parameter (',' params+=Parameter)* ','?)?; //ok
 Parameter: name=ID ('=' defaultExpr=Expr)?; // ok
