@@ -30,36 +30,18 @@ SingleModuleInstantiation: id=ModuleId '(' args=Arguments ')' ;
 Expr: 
     or=LogicOr ('?' trueExpr=Expr ':' falseExpr=Expr)?
     | FUNCTION '(' parameters=Parameters ')' expr=Expr
-    | LET '(' args=Arguments ')' expr=Expr
-    | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; 
-
-ExprNL: 
-    or=LogicOrNL ('?' trueExpr=Expr ':' falseExpr=Expr)?
-    | FUNCTION '(' parameters=Parameters ')' expr=Expr
+    | LET '(' args=Arguments ')' (expr=Expr|lc=ListComprehensionElementP)
     | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; 
 
 LogicOr: expr+=LogicAnd ('||' expr+=LogicAnd )*; 
-LogicOrNL: expr+=LogicAndNL ('||' expr+=LogicAnd )*; 
 LogicAnd: expr+= Equality ('&&' expr+=Equality)*; 
-LogicAndNL: expr+= EqualityNL ('&&' expr+=Equality)*; 
 Equality: expr+=Comparison (('='|'!=') expr+=Comparison)*; 
-EqualityNL: expr+=ComparisonNL (('='|'!=') expr+=Comparison)*; 
 Comparison: expr+=Addition (('>'|'>='|'<'|'<=') expr+=Addition)*;  
-ComparisonNL: expr+=AdditionNL (('>'|'>='|'<'|'<=') expr+=Addition)*;  
 Addition: expr+=Multiplication (('+'|'-') expr+=Multiplication)*;
-AdditionNL: expr+=MultiplicationNL (('+'|'-') expr+=Multiplication)*;
 Multiplication: expr+=Unary (('*'|'/'|'%') expr+=Unary)*;
-MultiplicationNL: expr+=UnaryNL (('*'|'/'|'%') expr+=Unary)*;
 Unary: ('+'|'-'|'!')* expr=Exponent; 
-UnaryNL: ('+'|'-'|'!')* expr=ExponentNL; 
 Exponent: call=Call ('^' unary=Unary)?; 
-ExponentNL: call=CallNL ('^' unary=Unary)?; 
 Call: part+=Primary (
-    '(' args+=Arguments ')' 
-    | '[' expr+=Expr ']'
-    | '.' id+=ID
-)*; 
-CallNL: part+=PrimaryNL (
     '(' args+=Arguments ')' 
     | '[' expr+=Expr ']'
     | '.' id+=ID
@@ -69,26 +51,18 @@ Primary:
 'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
 | '(' expr+=Expr ')'
 | '[' (
-     expr+=ExprNL ':' expr+=Expr (':' expr+=Expr)? // range 
+     expr+=Expr ':' expr+=Expr (':' expr+=Expr)? // range 
      | v+=ListComprehensionElementP (',' v+=ListComprehensionElementP)* ','?
 )? ']' ; 
 
-PrimaryNL:
-'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
-| '(' expr+=ExprNL ')'
-| '[' (
-     expr+=ExprNL ':' expr+=Expr (':' expr+=Expr)? // range 
-     | v+=ListComprehensionElementP (',' v+=ListComprehensionElementP)* ','?
-)? ']' ; 
 
 ListComprehensionElementP: e=ListComprehensionElement | '(' e=ListComprehensionElement ')'; 
 ListComprehensionElement:
-    LET '(' args=Arguments ')' children=ListComprehensionElementP |
     EACH v+=ListComprehensionElementOrExpr
     | FOR '(' args=Arguments (';' expr=Expr ';' args2=Arguments)? ')' v+=ListComprehensionElementOrExpr
     | IF '(' expr=Expr ')' v+=ListComprehensionElementOrExpr ( ELSE v+= ListComprehensionElementOrExpr) ; 
 
-ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=ExprNL;
+ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=Expr;
 
 Parameters: (params+=Parameter (',' params+=Parameter)* ','?)?; 
 Parameter: name=ID ('=' defaultExpr=Expr)?; 
