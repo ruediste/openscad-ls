@@ -3,6 +3,7 @@ import {
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
 } from 'langium';
 import { OpenScadGeneratedModule, OpenScadGeneratedSharedModule } from './generated/module';
+import { OpenScadScopeComputation } from './open-scad-scope-computation';
 import { OpenScadValidationRegistry, OpenScadValidator } from './open-scad-validator';
 
 /**
@@ -26,6 +27,10 @@ export type OpenScadServices = LangiumServices & OpenScadAddedServices
  * selected services, while the custom services must be fully specified.
  */
 export const OpenScadModule: Module<OpenScadServices, PartialLangiumServices & OpenScadAddedServices> = {
+    references: {
+        ScopeComputation: (services) => new OpenScadScopeComputation(services)
+    }
+    ,
     validation: {
         ValidationRegistry: (services) => new OpenScadValidationRegistry(services),
         OpenScadValidator: () => new OpenScadValidator()

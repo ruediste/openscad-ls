@@ -3,33 +3,36 @@ grammar OpenScad
 entry Input: statements+=Statement*; 
 Statement: 
     ';'
-    |'{' Statement* '}'
+    | BlockStatement
     | ModuleInstantiation
     | Assignment 
     | ModuleDefinition
     | FunctionDefinition
     ;
-
+BlockStatement: '{' stmts+=Statement* '}';
 ModuleDefinition: MODULE name=ID '(' params= Parameters ')'  body=Statement; 
 FunctionDefinition: FUNCTION name=ID '(' params=Parameters ')' '=' expr=Expr ';' ; 
 
-Assignment: name=ID '=' exp=Expr ';' ; 
+Assignment: var=VariableDefinition '=' exp=Expr ';' ; 
+
+// definition of any variable (assignment, parameter). This will be referenced from expressions
+VariableDefinition: name=ID; 
 
 ModuleInstantiation: ('!'|'#'|'%'|'*')* module=SingleModuleInstantiation child=ChildStatement | ifElse=IfelseStatement; 
 IfelseStatement: ifStmt=IfStatement (ELSE elseBranch=ChildStatement)?; 
 IfStatement: IF '(' condition=Expr ')' body=ChildStatement; 
 
-ChildStatements:  (stmts+=ChildStatement | assignements+=Assignment)*;  
+ChildStatement: ';' | block=ChildBlock | module=ModuleInstantiation; 
+ChildBlock:'{' stmts+=ChildBlockStatement*  '}';
+ChildBlockStatement: ChildStatement | Assignment;
 
-ChildStatement: ';' | '{' block=ChildStatements  '}' | module=ModuleInstantiation; 
-
-ModuleId: id=ID|FOR|LET|ASSERT|ECHO|EACH; 
+ModuleId: id=[ModuleDefinition]|FOR|LET|ASSERT|ECHO|EACH; 
 
 SingleModuleInstantiation: id=ModuleId '(' args=Arguments ')' ;
 
 Expr: 
     or=LogicOr ('?' trueExpr=Expr ':' falseExpr=Expr)?
-    | FUNCTION '(' parameters=Parameters ')' expr=Expr
+    | FUNCTION '(' params=Parameters ')' expr=Expr
     | LET '(' args=Arguments ')' (expr=Expr|lc=ListComprehensionElementP)
     | (ASSERT|ECHO) '(' args=Arguments ')' expr=Expr? ; 
 
@@ -48,7 +51,7 @@ Call: part+=Primary (
 )*; 
 
 Primary:
-'true'|'false'|'undef'|number=NUMBER|string=STRING|id=ID
+'true'|'false'|'undef'|number=NUMBER|string=STRING|var=[VariableDefinition]
 | '(' expr+=Expr ')'
 | '[' (
      expr+=Expr ':' expr+=Expr (':' expr+=Expr)? // range 
@@ -65,10 +68,10 @@ ListComprehensionElement:
 ListComprehensionElementOrExpr: elements=ListComprehensionElementP | expr=Expr;
 
 Parameters: (params+=Parameter (',' params+=Parameter)* ','?)?; 
-Parameter: name=ID ('=' defaultExpr=Expr)?; 
+Parameter: var=VariableDefinition ('=' defaultExpr=Expr)?; 
 
 Arguments: (args+=Argument (',' args+=Argument)* ','?)?; 
-Argument: (paramName=ID '=' )? expr=Expr; 
+Argument: (paramName=[VariableDefinition] '=' )? expr=Expr; 
 
 hidden terminal WS: /\s+/;
 
