@@ -36,7 +36,11 @@
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
+                "${workspaceFolder}/out/**/*.js",
+            ],
+            "resolveSourceMapLocations": [
+                "out/**/*.js",
+                "${workspaceFolder:packages}/langium/lib/**/*.js",
             ]
         }
     ]

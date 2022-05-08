@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "langium:watch",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: langium:watch",
+			"detail": "langium generate --watch"
+		},
+		{
+			"type": "npm",
+			"script": "watch",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: watch",
+			"detail": "tsc -b tsconfig.json --watch"
+		}
+	]
+}

@@ -8,7 +8,11 @@ Statement:
     | Assignment 
     | ModuleDefinition
     | FunctionDefinition
+    | Include
+    | Use
     ;
+Include: 'include' file=FILE_REFERENCE ';' ;
+Use: 'use' file=FILE_REFERENCE ';' ;
 BlockStatement: '{' stmts+=Statement* '}';
 ModuleDefinition: MODULE name=ID '(' params= Parameters ')'  body=Statement; 
 FunctionDefinition: FUNCTION name=ID '(' params=Parameters ')' '=' expr=Expr ';' ; 
@@ -88,6 +92,7 @@ terminal ELSE: /else/;
 terminal NUMBER returns number: /[0-9]+/;
 terminal ID: /\$?[a-zA-Z0-9_]+/;
 terminal STRING: /"[^"]*"|'[^']*'/;
+terminal FILE_REFERENCE: /\<[^>]*\>/;
 
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
 hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
